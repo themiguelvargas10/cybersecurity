@@ -1,0 +1,187 @@
+\documentclass[conference]{IEEEtran}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{url}
+\usepackage[hidelinks]{hyperref}
+
+\title{Lab 03: Web Security in an Event Ticket System\\A Case Study and Test Plan for POSESI\'ON XXVI}
+\author{\IEEEauthorblockN{Miguel \'Angel Coria Vargas}
+\IEEEauthorblockA{Cybersecurity Engineering Student\\
+Universidad Polit\'ecnica de Yucat\'an\\
+M\'erida, Mexico}}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+POSESI\'ON XXVI is a web system for an event. It manages tickets, guests, entry records, and money records. This report explains the system and its security needs in simple English. It uses the project summary as its source. It also gives a plan for four security tests. The tests need a separate lab with fake data. This report does not give new test results. Some security settings still need a check. The goal is to learn how to test access, protect data, and read security logs.
+\end{abstract}
+
+\begin{IEEEkeywords}
+web security, access control, tickets, security logs, learning lab
+\end{IEEEkeywords}
+
+\section{Introduction}
+I built POSESI\'ON XXVI for a Halloween event. At first, the website showed invitation information. Later, it became a system for tickets, entry control, statistics, and money records.
+
+This project connects web development with cybersecurity. The system has guests and staff users. Each user needs different permissions. A guest must not have the same access as a staff user.
+
+This report has two parts. The first part describes the work in the project summary. The second part gives a test plan. A planned test is not a completed test.
+
+\section{Source and Current Status}
+The source for this case study is my project summary, dated October 13, 2026. The report does not include a new code review or a check of the live cloud settings.
+
+The summary says that the event system is working. It also lists open security checks. These include database rules, function permissions, file permissions, and the money audit log. No test in this report is marked as passed.
+
+The language is simple. Some technical words are needed. Each important word has a short explanation.
+
+\section{System Overview}
+The website uses HTML, CSS, and JavaScript. Supabase provides PostgreSQL, user login, file storage, and database functions. Cloudflare Workers publishes the website. GitHub stores the source code.
+
+The main functions described in the summary are:
+\begin{itemize}
+\item Find tickets with an access code.
+\item Create individual tickets with QR codes.
+\item Download ticket images.
+\item Manage guests and group tickets.
+\item Scan a QR code and record entry.
+\item Show ticket and attendance statistics.
+\item Record income, costs, and receipt files.
+\end{itemize}
+
+A ticket record is not proof of a payment. Money records must show real payments and costs.
+
+\subsection{Main Data Flow}
+A guest or staff user opens the website in a browser. The application uses Supabase for data and login operations. Cloudflare serves the website. A review must check the real request paths: not every data request must pass through a Worker.
+
+Security rules must work at the server or database level. A hidden button is not an access control rule.
+
+\section{Security Goals and Risks}
+\subsection{What Needs Protection}
+The system needs to protect guest data, ticket codes, staff accounts, entry records, money records, and receipt files. It also needs to stay available during the event.
+
+\subsection{Main Risks}
+\begin{itemize}
+\item A user reads another person's private data.
+\item A user without staff permission changes a ticket.
+\item The same ticket is used more than once.
+\item A private receipt is available to the public.
+\item A money change has no useful record.
+\item Many requests make the service slow or unavailable.
+\end{itemize}
+
+These are risks to check. They are not confirmed problems in the website.
+
+\section{Controls Described in the Project}
+\subsection{Login and Permissions}
+Authentication checks who a user is. Authorization checks what the user can do. The summary describes staff login with Supabase Auth and checks for staff permissions. Both checks are needed.
+
+\subsection{Database Access Rules}
+Row Level Security (RLS) is a set of rules for access to rows in a database table. The summary describes work on these rules. The active rules still need a check. A SQL file in GitHub does not prove that its rules are active in the database.
+
+Database functions also need permission checks. A user must not get more access by calling a function directly.
+
+\subsection{QR Codes and Entry Records}
+The summary describes random QR tokens and entry checks in Supabase. A random token helps make guessing harder. It does not replace permission checks or limits on requests.
+
+The system must also handle two entry requests at the same time. Only one valid entry should be saved for an individual ticket. A group package must keep the correct state for each member.
+
+\subsection{Files and Money Records}
+Receipt files need their own access rules. Database rules alone do not prove that stored files are private.
+
+An audit log records important changes. A money audit log is prepared in the project, but its installation still needs a check. A useful record should show who made a change, what changed, and when it happened.
+
+\subsection{Other Controls}
+The summary describes headers against clickjacking and settings to avoid caching staff pages. Clickjacking uses a misleading page to make a person click another page. The real headers and cache behavior still need a check.
+
+\section{Lab Scope and Setup}
+The live event is outside the active test scope. The planned lab uses a separate copy of the application, a separate database, and fake records. It must not use real guest data, receipt files, or production secrets.
+
+Before a test, I will:
+\begin{enumerate}
+\item Write the lab URL and allowed actions.
+\item Check that all settings point to the lab.
+\item Create test users and fake tickets.
+\item Save the starting data state.
+\item Choose one control and its expected result.
+\end{enumerate}
+
+I will use three user states: no login, a logged-in user without staff access, and an allowed staff user. Load tests are outside this first plan.
+
+\section{Planned Security Tests}
+\subsection{Test A: Staff Access}
+\textbf{Goal:} Check login and staff permissions.
+
+\textbf{Steps:} In each user state, try to read lab staff data and update one fake ticket. Test the request itself, not only the visible page.
+
+\textbf{Expected result:} Only the allowed staff user can complete the staff action. Other users cannot read protected data or change the ticket.
+
+\textbf{Evidence:} Save the user type, request, response, and final ticket state. An error message alone is not enough.
+
+\subsection{Test B: Ticket Access}
+\textbf{Goal:} Check which ticket data each code or user can read.
+
+\textbf{Steps:} Create fake tickets for two users. Test a valid code, a wrong code, and another user's ticket ID in the lab. For a group code, write which group data it should show.
+
+\textbf{Expected result:} The response shows only the data allowed by the access model. Changing an ID must not give extra access.
+
+\textbf{Evidence:} Save the expected data and actual response. Hide full access codes in public evidence.
+
+\subsection{Test C: Repeated Entry}
+\textbf{Goal:} Check that a ticket cannot create two valid entries.
+
+\textbf{Steps:} Use one fake ticket. Record entry once, repeat the action, and then test two requests at the same time with another fake ticket. Also check one fake group package.
+
+\textbf{Expected result:} An individual ticket has one valid entry. Each group member keeps the correct state.
+
+\textbf{Evidence:} Save the starting state, both responses, and the final database state.
+
+\subsection{Test D: Security Logs}
+\textbf{Goal:} Find evidence of important actions.
+
+\textbf{Steps:} Make a failed login, a blocked staff action, and a repeated entry attempt in the lab. Check which events appear in the available logs.
+
+\textbf{Expected result:} Useful records help explain what happened. If an event has no record, document the missing information.
+
+\textbf{Evidence:} Save the test time and a safe log extract. Do not publish passwords, full tokens, or private data.
+
+\section{Monitoring and a Future SIEM}
+A log is a record of an event. Supabase has authentication audit logs~\cite{supabase}. Cloudflare Workers has execution logs~\cite{cloudflare}. The project still needs a check of enabled logs, saved fields, and data retention.
+
+A Security Information and Event Management (SIEM) system collects and checks logs. It can help find suspicious activity. It does not find every weakness or prove that the application is safe.
+
+The first step is to understand one event and its record. A later step can send safe lab logs to a SIEM and test a simple alert. There is no completed SIEM integration in this report.
+
+A repeated QR scan may be a staff mistake or an attempt to reuse a ticket. An alert needs context before it is called an attack.
+
+\section{Evidence and Result Form}
+For each test, I will record:
+\begin{itemize}
+\item Test ID, date, and lab version.
+\item Goal, user type, and steps.
+\item Expected and actual results.
+\item Safe evidence and final data state.
+\item Status: pass, fail, or not enough evidence.
+\item A fix and a new test, if needed.
+\end{itemize}
+
+\textbf{Current result:} Tests A, B, C, and D are not run for this report. No screenshots, measured results, or new security findings are available here.
+
+Public evidence must use fake data. It must not include real credentials, private files, or personal guest information.
+
+\section{Learning Goals}
+This lab connects database access, web requests, user permissions, and security logs. I want to explain how a control works and how I checked it.
+
+AI can help explain code and suggest test steps. Before using a suggestion, I need to understand its action, its risk, and how to undo a change. AI output is not test evidence.
+
+\section{Conclusion}
+POSESI\'ON XXVI gives a useful case for learning web security. The project summary describes several controls, but some settings and results still need checks. This document is a case study and a test plan. It is not a full security audit.
+
+The next step is to prepare the separate lab, run the four tests, and add safe evidence. This can show what works, what needs a fix, and what I learned.
+
+\begin{thebibliography}{00}
+\bibitem{supabase} Supabase, ``Auth Audit Logs,'' official documentation. Accessed: Oct. 13, 2026. [Online]. Available: \url{https://supabase.com/docs/guides/auth/audit-logs}
+\bibitem{cloudflare} Cloudflare, ``Workers Logs,'' official documentation. Accessed: Oct. 13, 2026. [Online]. Available: \url{https://developers.cloudflare.com/workers/observability/logs/workers-logs/}
+\end{thebibliography}
+\end{document}
+
